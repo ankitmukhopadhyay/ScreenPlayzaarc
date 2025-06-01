@@ -69,7 +69,19 @@
             <!-- Script Editor -->
             <div class="editor-container">
                 <div class="page-info">
-                    <span>Page <span id="currentPage">1</span></span>
+                    <div class="page-navigation">
+                        <button class="btn btn-small" onclick="goToPreviousPage()" id="prevPageBtn">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <span class="page-display">
+                            Page 
+                            <input type="number" id="currentPageInput" min="1" value="1" onchange="goToPage(this.value)">
+                            of <span id="totalPages">1</span>
+                        </span>
+                        <button class="btn btn-small" onclick="goToNextPage()" id="nextPageBtn">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
                     <span class="word-count">Words: <span id="wordCount">0</span></span>
                 </div>
                 

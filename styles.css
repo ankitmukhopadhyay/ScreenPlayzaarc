@@ -207,6 +207,35 @@ body {
     color: #666;
 }
 
+.page-navigation {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+#currentPageInput {
+    width: 60px;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.9rem;
+}
+
+#currentPageInput:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
 /* Script Editor */
 .script-editor {
     flex: 1;
@@ -362,6 +391,25 @@ body {
     .toolbar {
         flex-direction: column;
         align-items: stretch;
+    }
+    
+    .page-info {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: stretch;
+    }
+    
+    .page-navigation {
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .page-display {
+        font-size: 0.8rem;
+    }
+    
+    #currentPageInput {
+        width: 50px;
     }
     
     .script-editor {

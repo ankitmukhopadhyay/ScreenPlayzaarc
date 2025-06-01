@@ -9,6 +9,10 @@ class ScriptWriter {
             lastModified: new Date()
         };
         this.userSetType = false; // Track if user manually set element type
+        this.currentPage = 1;
+        this.linesPerPage = 55; // Standard screenplay lines per page
+        this.pages = [];
+        this.allLines = []; // Keep track of all lines across all pages
         
         this.init();
     }
@@ -18,6 +22,8 @@ class ScriptWriter {
         this.updateWordCount();
         this.updateCursorPosition();
         this.loadFromLocalStorage();
+        this.calculatePages();
+        this.showPage(1);
     }
 
     setupEventListeners() {
@@ -26,6 +32,7 @@ class ScriptWriter {
             this.handleInput();
             this.updateWordCount();
             this.autoSave();
+            this.calculatePages();
         });
 
         this.editor.addEventListener('keydown', (e) => {
@@ -53,6 +60,14 @@ class ScriptWriter {
                         e.preventDefault();
                         this.toggleExportMenu();
                         break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        this.goToPreviousPage();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        this.goToNextPage();
+                        break;
                 }
             }
         });
@@ -68,8 +83,181 @@ class ScriptWriter {
         this.editor.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.clipboardData || window.clipboardData).getData('text');
-            this.insertText(text);
+            this.insertFormattedText(text);
         });
+    }
+
+    calculatePages() {
+        this.allLines = Array.from(this.editor.querySelectorAll('.script-line'));
+        this.pages = [];
+        let currentPageLines = [];
+        let lineCount = 0;
+
+        this.allLines.forEach((line, index) => {
+            // Calculate line height based on element type
+            let linesUsed = this.getLinesUsedByElement(line.dataset.type);
+
+            // Check if adding this line would exceed page limit
+            if (lineCount + linesUsed > this.linesPerPage && currentPageLines.length > 0) {
+                this.pages.push([...currentPageLines]);
+                currentPageLines = [];
+                lineCount = 0;
+            }
+
+            currentPageLines.push(line);
+            lineCount += linesUsed;
+        });
+
+        // Add the last page if it has content
+        if (currentPageLines.length > 0) {
+            this.pages.push(currentPageLines);
+        }
+
+        // Ensure at least one page exists
+        if (this.pages.length === 0) {
+            this.pages.push([]);
+        }
+
+        this.updatePageDisplay();
+    }
+
+    getLinesUsedByElement(type) {
+        switch (type) {
+            case 'scene-heading':
+            case 'character':
+                return 2; // Extra spacing above
+            case 'fade-in':
+            case 'fade-out':
+                return 3; // Extra spacing
+            default:
+                return 1;
+        }
+    }
+
+    getCurrentPageLineCount() {
+        if (!this.pages[this.currentPage - 1]) return 0;
+        
+        let lineCount = 0;
+        this.pages[this.currentPage - 1].forEach(line => {
+            lineCount += this.getLinesUsedByElement(line.dataset.type);
+        });
+        return lineCount;
+    }
+
+    updatePageDisplay() {
+        const totalPages = this.pages.length;
+        document.getElementById('totalPages').textContent = totalPages;
+        document.getElementById('currentPageInput').value = this.currentPage;
+        document.getElementById('currentPageInput').max = totalPages;
+        
+        // Update button states
+        const prevBtn = document.getElementById('prevPageBtn');
+        const nextBtn = document.getElementById('nextPageBtn');
+        
+        prevBtn.disabled = this.currentPage <= 1;
+        nextBtn.disabled = this.currentPage >= totalPages;
+        
+        // Add visual styling for disabled buttons
+        if (prevBtn.disabled) {
+            prevBtn.style.opacity = '0.5';
+            prevBtn.style.cursor = 'not-allowed';
+        } else {
+            prevBtn.style.opacity = '1';
+            prevBtn.style.cursor = 'pointer';
+        }
+        
+        if (nextBtn.disabled) {
+            nextBtn.style.opacity = '0.5';
+            nextBtn.style.cursor = 'not-allowed';
+        } else {
+            nextBtn.style.opacity = '1';
+            nextBtn.style.cursor = 'pointer';
+        }
+    }
+
+    showPage(pageNumber) {
+        if (pageNumber < 1 || pageNumber > this.pages.length) return;
+        
+        this.currentPage = pageNumber;
+        
+        // Hide all lines first
+        this.allLines.forEach(line => {
+            line.style.display = 'none';
+        });
+
+        // Show only lines for current page
+        if (this.pages[pageNumber - 1]) {
+            this.pages[pageNumber - 1].forEach(line => {
+                line.style.display = 'block';
+            });
+        }
+
+        this.updatePageDisplay();
+    }
+
+    goToNextPage() {
+        if (this.currentPage < this.pages.length) {
+            this.showPage(this.currentPage + 1);
+            // Set cursor to the first line of the new page
+            setTimeout(() => {
+                const firstLineOnPage = this.pages[this.currentPage - 1]?.[0];
+                if (firstLineOnPage) {
+                    this.setCursorAtStart(firstLineOnPage);
+                }
+            }, 50);
+        }
+    }
+
+    goToPreviousPage() {
+        if (this.currentPage > 1) {
+            this.showPage(this.currentPage - 1);
+            // Set cursor to the last line of the previous page
+            setTimeout(() => {
+                const lastLineOnPage = this.pages[this.currentPage - 1]?.slice(-1)[0];
+                if (lastLineOnPage) {
+                    this.setCursorAtEnd(lastLineOnPage);
+                }
+            }, 50);
+        }
+    }
+
+    goToPage(pageNumber) {
+        const page = parseInt(pageNumber);
+        if (page >= 1 && page <= this.pages.length) {
+            this.showPage(page);
+            // Set cursor to the first line of the target page
+            setTimeout(() => {
+                const firstLineOnPage = this.pages[page - 1]?.[0];
+                if (firstLineOnPage) {
+                    this.setCursorAtStart(firstLineOnPage);
+                }
+            }, 50);
+        }
+    }
+
+    checkPageLimitAndAdvance() {
+        const currentPageLineCount = this.getCurrentPageLineCount();
+        const currentLine = this.getCurrentLine();
+        
+        if (currentLine) {
+            const currentLineUsage = this.getLinesUsedByElement(currentLine.dataset.type);
+            
+            // If adding a new line would exceed the limit, move to next page
+            if (currentPageLineCount + currentLineUsage >= this.linesPerPage) {
+                // Check if we need to create a new page
+                if (this.currentPage >= this.pages.length) {
+                    // Create new page automatically
+                    setTimeout(() => {
+                        this.calculatePages();
+                        this.goToNextPage();
+                    }, 100);
+                } else {
+                    this.goToNextPage();
+                }
+                return true; // Indicates page was advanced
+            }
+        }
+        return false;
     }
 
     handleInput() {
@@ -90,7 +278,16 @@ class ScriptWriter {
         switch (e.key) {
             case 'Enter':
                 e.preventDefault();
-                this.handleEnterKey(currentLine);
+                // Check if we need to advance to next page before adding new line
+                const pageAdvanced = this.checkPageLimitAndAdvance();
+                if (!pageAdvanced) {
+                    this.handleEnterKey(currentLine);
+                } else {
+                    // If page was advanced, add the new line on the new page
+                    setTimeout(() => {
+                        this.handleEnterKey(currentLine);
+                    }, 150);
+                }
                 break;
             case 'Tab':
                 e.preventDefault();
@@ -124,7 +321,53 @@ class ScriptWriter {
         if (prevLine) {
             currentLine.remove();
             this.setCursorAtEnd(prevLine);
+            // Recalculate pages after removing line
+            setTimeout(() => {
+                this.calculatePages();
+                // Ensure we're on the correct page
+                const pageWithPrevLine = this.findPageForLine(prevLine);
+                if (pageWithPrevLine && pageWithPrevLine !== this.currentPage) {
+                    this.showPage(pageWithPrevLine);
+                }
+            }, 50);
         }
+    }
+
+    findPageForLine(targetLine) {
+        for (let pageIndex = 0; pageIndex < this.pages.length; pageIndex++) {
+            if (this.pages[pageIndex].includes(targetLine)) {
+                return pageIndex + 1;
+            }
+        }
+        return null;
+    }
+
+    insertNewLine(type = 'scene-heading') {
+        const newLine = document.createElement('div');
+        newLine.className = `script-line ${type}`;
+        newLine.dataset.type = type;
+        newLine.textContent = '';
+        
+        const currentLine = this.getCurrentLine();
+        
+        if (currentLine) {
+            currentLine.parentNode.insertBefore(newLine, currentLine.nextSibling);
+        } else {
+            this.editor.appendChild(newLine);
+        }
+        
+        // Set cursor in new line
+        this.setCursorAtStart(newLine);
+        this.elementType.value = type;
+        
+        // Recalculate pages and check if we need to move to next page
+        setTimeout(() => {
+            this.calculatePages();
+            const pageWithNewLine = this.findPageForLine(newLine);
+            if (pageWithNewLine && pageWithNewLine !== this.currentPage) {
+                this.showPage(pageWithNewLine);
+            }
+        }, 50);
     }
 
     getCurrentLine() {
@@ -142,24 +385,20 @@ class ScriptWriter {
     }
 
     autoFormat(line) {
-        const text = line.textContent.trim().toUpperCase();
+        const text = line.textContent.trim();
         
-        // Only auto-detect very specific and obvious cases
-        // Auto-detect scene headings (INT./EXT. at the beginning)
-        if (text.match(/^(INT\.|EXT\.)\s/)) {
-            this.setLineType(line, 'scene-heading');
+        // Use the same detection logic as paste functionality
+        const detectedType = this.detectElementTypeFromText(text);
+        
+        // Only apply auto-formatting for very obvious cases to avoid interfering with user intent
+        // We'll be more conservative here than in paste detection
+        if (text.match(/^(INT\.|EXT\.)\s/) || 
+            text === 'FADE IN:' || 
+            text === 'FADE OUT.' || 
+            text === 'FADE OUT' ||
+            text.match(/^(CUT TO:|DISSOLVE TO:)$/i)) {
+            this.setLineType(line, detectedType);
         }
-        // Auto-detect specific transitions (only exact matches)
-        else if (text === 'FADE IN:' || text === 'FADE OUT.' || text === 'CUT TO:' || text === 'DISSOLVE TO:') {
-            if (text === 'FADE IN:') {
-                this.setLineType(line, 'fade-in');
-            } else if (text === 'FADE OUT.') {
-                this.setLineType(line, 'fade-out');
-            } else {
-                this.setLineType(line, 'transition');
-            }
-        }
-        // Remove automatic character detection - let users manually set this
     }
 
     setLineType(line, type) {
@@ -170,45 +409,6 @@ class ScriptWriter {
         
         // Update dropdown
         this.elementType.value = type;
-    }
-
-    insertNewLine(type = 'scene-heading') {
-        const newLine = document.createElement('div');
-        newLine.className = `script-line ${type}`;
-        newLine.dataset.type = type;
-        newLine.textContent = '';
-        
-        const selection = window.getSelection();
-        const range = selection.getRangeAt(0);
-        const currentLine = this.getCurrentLine();
-        
-        if (currentLine) {
-            currentLine.parentNode.insertBefore(newLine, currentLine.nextSibling);
-        } else {
-            this.editor.appendChild(newLine);
-        }
-        
-        // Set cursor in new line
-        this.setCursorAtStart(newLine);
-        this.elementType.value = type;
-    }
-
-    setCursorAtEnd(element) {
-        const range = document.createRange();
-        const selection = window.getSelection();
-        range.selectNodeContents(element);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-    }
-
-    setCursorAtStart(element) {
-        const range = document.createRange();
-        const selection = window.getSelection();
-        range.setStart(element, 0);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
     }
 
     getNextElementType(currentType) {
@@ -235,7 +435,104 @@ class ScriptWriter {
         }
     }
 
+    insertFormattedText(text) {
+        // Split text into lines and process each one
+        const lines = text.split('\n').filter(line => line.trim() !== '');
+        const currentLine = this.getCurrentLine();
+        let insertionPoint = currentLine;
+
+        lines.forEach((lineText, index) => {
+            // Detect element type based on content
+            const elementType = this.detectElementTypeFromText(lineText.trim());
+            
+            // Create new line element
+            const newLine = document.createElement('div');
+            newLine.className = `script-line ${elementType}`;
+            newLine.dataset.type = elementType;
+            newLine.textContent = lineText.trim();
+            
+            // Insert the line
+            if (insertionPoint && insertionPoint.parentNode) {
+                insertionPoint.parentNode.insertBefore(newLine, insertionPoint.nextSibling);
+            } else {
+                this.editor.appendChild(newLine);
+            }
+            
+            insertionPoint = newLine; // Update insertion point for next line
+        });
+
+        // Set cursor to the last inserted line
+        if (insertionPoint) {
+            this.setCursorAtEnd(insertionPoint);
+        }
+
+        // Recalculate pages and update display
+        setTimeout(() => {
+            this.calculatePages();
+            const pageWithLastLine = this.findPageForLine(insertionPoint);
+            if (pageWithLastLine && pageWithLastLine !== this.currentPage) {
+                this.showPage(pageWithLastLine);
+            }
+        }, 100);
+    }
+
+    detectElementTypeFromText(text) {
+        const upperText = text.toUpperCase();
+        
+        // Scene headings - starts with INT. or EXT. followed by space
+        if (upperText.match(/^(INT\.|EXT\.)\s/)) {
+            return 'scene-heading';
+        }
+        
+        // Specific transitions
+        if (upperText === 'FADE IN:') {
+            return 'fade-in';
+        }
+        if (upperText === 'FADE OUT.' || upperText === 'FADE OUT') {
+            return 'fade-out';
+        }
+        if (upperText.match(/^(CUT TO:|DISSOLVE TO:|MATCH CUT:|JUMP CUT:|SMASH CUT:)$/)) {
+            return 'transition';
+        }
+        
+        // Parentheticals - text wrapped in parentheses
+        if (text.match(/^\([^)]*\)$/)) {
+            return 'parenthetical';
+        }
+        
+        // Character names - all caps, short lines (likely speaker names)
+        // Check if it's all uppercase, no punctuation except parentheses, and reasonable length
+        if (upperText === text && 
+            text.match(/^[A-Z][A-Z\s]*(\([^)]*\))?$/) && 
+            text.length <= 50 &&
+            !text.includes('.') && 
+            !text.includes(',') &&
+            !text.includes('!') &&
+            !text.includes('?')) {
+            return 'character';
+        }
+        
+        // Additional scene heading patterns
+        if (upperText.match(/^(INTERIOR|EXTERIOR)/)) {
+            return 'scene-heading';
+        }
+        
+        // More transition patterns
+        if (upperText.match(/(FADE TO BLACK|FADE TO WHITE|FADE IN FROM BLACK|FADE IN FROM WHITE)$/)) {
+            return 'transition';
+        }
+        
+        // Time transitions
+        if (upperText.match(/^(LATER|MEANWHILE|EARLIER|THE NEXT DAY|MOMENTS LATER|SUDDENLY)$/)) {
+            return 'transition';
+        }
+        
+        // Default to action for everything else
+        return 'action';
+    }
+
     insertText(text) {
+        // For single line insertions, use the simpler method
         const selection = window.getSelection();
         if (selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
@@ -253,10 +550,6 @@ class ScriptWriter {
         const text = this.editor.textContent || '';
         const words = text.trim() ? text.trim().split(/\s+/).length : 0;
         document.getElementById('wordCount').textContent = words;
-        
-        // Estimate page count (250 words per page average for scripts)
-        const pages = Math.max(1, Math.ceil(words / 250));
-        document.getElementById('currentPage').textContent = pages;
     }
 
     updateCursorPosition() {
@@ -303,6 +596,24 @@ class ScriptWriter {
             }
         }
     }
+
+    setCursorAtEnd(element) {
+        const range = document.createRange();
+        const selection = window.getSelection();
+        range.selectNodeContents(element);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
+    setCursorAtStart(element) {
+        const range = document.createRange();
+        const selection = window.getSelection();
+        range.setStart(element, 0);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
 }
 
 // Global functions for UI interactions
@@ -320,6 +631,8 @@ function newScript() {
             lastModified: new Date()
         };
         scriptWriter.updateWordCount();
+        scriptWriter.calculatePages();
+        scriptWriter.showPage(1);
     }
 }
 
@@ -531,6 +844,19 @@ function updateStatus(message) {
     setTimeout(() => {
         statusBar.textContent = 'Ready';
     }, 3000);
+}
+
+// Global functions for page navigation
+function goToNextPage() {
+    scriptWriter.goToNextPage();
+}
+
+function goToPreviousPage() {
+    scriptWriter.goToPreviousPage();
+}
+
+function goToPage(pageNumber) {
+    scriptWriter.goToPage(pageNumber);
 }
 
 // Initialize the application
