@@ -91,21 +91,60 @@ class ScriptWriter {
         this.allLines = Array.from(this.editor.querySelectorAll('.script-line'));
         this.pages = [];
         let currentPageLines = [];
-        let lineCount = 0;
-
+        
+        // Use exact PDF export measurements
+        let yPosition = 20;
+        const lineHeight = 6;
+        const pageHeight = 280;
+        
         this.allLines.forEach((line, index) => {
-            // Calculate line height based on element type
-            let linesUsed = this.getLinesUsedByElement(line.dataset.type);
-
-            // Check if adding this line would exceed page limit
-            if (lineCount + linesUsed > this.linesPerPage && currentPageLines.length > 0) {
+            // Check if we need a page break BEFORE processing this line
+            if (yPosition > pageHeight && currentPageLines.length > 0) {
                 this.pages.push([...currentPageLines]);
                 currentPageLines = [];
-                lineCount = 0;
+                yPosition = 20;
             }
-
+            
+            const text = line.textContent.trim();
+            const type = line.dataset.type;
+            
+            // Calculate exact PDF positioning for this element type
+            let xPosition = 20;
+            switch (type) {
+                case 'character':
+                    xPosition = 100;
+                    break;
+                case 'dialogue':
+                    xPosition = 60;
+                    break;
+                case 'parenthetical':
+                    xPosition = 80;
+                    break;
+                case 'transition':
+                    xPosition = 140;
+                    break;
+                default:
+                    xPosition = 20;
+            }
+            
+            // Calculate max width exactly as PDF export does
+            const maxWidth = 160 - (xPosition - 20);
+            
+            // Estimate text wrapping more accurately
+            const textLines = this.estimateTextWrapping(text, maxWidth);
+            
+            // Calculate vertical space needed for this element
+            let verticalSpace = textLines * lineHeight;
+            
+            // Check again if adding this element would exceed page height
+            if (yPosition + verticalSpace > pageHeight && currentPageLines.length > 0) {
+                this.pages.push([...currentPageLines]);
+                currentPageLines = [];
+                yPosition = 20;
+            }
+            
             currentPageLines.push(line);
-            lineCount += linesUsed;
+            yPosition += verticalSpace + 2; // Extra spacing between elements (matches PDF)
         });
 
         // Add the last page if it has content
@@ -119,29 +158,82 @@ class ScriptWriter {
         }
 
         this.updatePageDisplay();
+        
+        // Adjust editor height to accommodate current page content
+        setTimeout(() => {
+            this.adjustEditorHeight();
+        }, 50);
     }
 
-    getLinesUsedByElement(type) {
+    estimateTextWrapping(text, maxWidth) {
+        if (!text || text.length === 0) return 1;
+        
+        // More accurate estimation of jsPDF's splitTextToSize
+        // Courier New is a monospace font, so character count is reliable
+        const avgCharWidth = 3.5; // Approximate character width in PDF units for 12pt Courier
+        const maxCharsPerLine = Math.floor(maxWidth / avgCharWidth);
+        
+        if (maxCharsPerLine <= 0) return 1;
+        
+        // Split by words to avoid breaking words mid-way (similar to jsPDF behavior)
+        const words = text.split(' ');
+        let lines = 1;
+        let currentLineLength = 0;
+        
+        words.forEach(word => {
+            if (currentLineLength + word.length + 1 > maxCharsPerLine) {
+                lines++;
+                currentLineLength = word.length;
+            } else {
+                currentLineLength += word.length + 1; // +1 for space
+            }
+        });
+        
+        return lines;
+    }
+
+    calculatePDFLinesUsed(text, type) {
+        // Use the same width calculation as PDF export
+        let xPosition = 20;
         switch (type) {
-            case 'scene-heading':
             case 'character':
-                return 2; // Extra spacing above
-            case 'fade-in':
-            case 'fade-out':
-                return 3; // Extra spacing
+                xPosition = 100;
+                break;
+            case 'dialogue':
+                xPosition = 60;
+                break;
+            case 'parenthetical':
+                xPosition = 80;
+                break;
+            case 'transition':
+                xPosition = 140;
+                break;
             default:
-                return 1;
+                xPosition = 20;
         }
+        
+        const maxWidth = 160 - (xPosition - 20);
+        return this.estimateTextWrapping(text, maxWidth);
     }
 
     getCurrentPageLineCount() {
-        if (!this.pages[this.currentPage - 1]) return 0;
+        if (!this.pages[this.currentPage - 1]) return 20; // Start position
         
-        let lineCount = 0;
+        // Calculate using exact PDF measurements
+        let yPosition = 20;
+        const lineHeight = 6;
+        
         this.pages[this.currentPage - 1].forEach(line => {
-            lineCount += this.getLinesUsedByElement(line.dataset.type);
+            const text = line.textContent.trim();
+            const type = line.dataset.type;
+            
+            let linesUsed = this.calculatePDFLinesUsed(text, type);
+            let verticalSpace = linesUsed * lineHeight;
+            
+            yPosition += verticalSpace + 2; // Extra spacing between elements
         });
-        return lineCount;
+        
+        return yPosition;
     }
 
     updatePageDisplay() {
@@ -193,6 +285,32 @@ class ScriptWriter {
         }
 
         this.updatePageDisplay();
+        
+        // Ensure the editor can scroll to show all content on this page
+        setTimeout(() => {
+            // Reset scroll position to top of page
+            this.editor.scrollTop = 0;
+            
+            // Calculate the total height needed for all visible content
+            let totalHeight = 0;
+            const visibleLines = this.pages[pageNumber - 1] || [];
+            
+            visibleLines.forEach(line => {
+                // Force browser to calculate the actual rendered height
+                const lineHeight = line.getBoundingClientRect().height;
+                totalHeight += lineHeight;
+            });
+            
+            // Add padding for comfortable viewing
+            totalHeight += 100;
+            
+            // Ensure the editor has enough height to show all content
+            if (totalHeight > this.editor.clientHeight) {
+                this.editor.style.minHeight = `${totalHeight}px`;
+            } else {
+                this.editor.style.minHeight = '500px'; // Default minimum
+            }
+        }, 50);
     }
 
     goToNextPage() {
@@ -236,14 +354,18 @@ class ScriptWriter {
     }
 
     checkPageLimitAndAdvance() {
-        const currentPageLineCount = this.getCurrentPageLineCount();
+        const currentPageYPosition = this.getCurrentPageLineCount();
         const currentLine = this.getCurrentLine();
         
         if (currentLine) {
-            const currentLineUsage = this.getLinesUsedByElement(currentLine.dataset.type);
+            const text = currentLine.textContent.trim();
+            const type = currentLine.dataset.type;
             
-            // If adding a new line would exceed the limit, move to next page
-            if (currentPageLineCount + currentLineUsage >= this.linesPerPage) {
+            let linesUsed = this.calculatePDFLinesUsed(text, type);
+            let verticalSpace = linesUsed * 6; // lineHeight
+            
+            // Check if adding this would exceed PDF page height (280)
+            if (currentPageYPosition + verticalSpace + 2 > 280) {
                 // Check if we need to create a new page
                 if (this.currentPage >= this.pages.length) {
                     // Create new page automatically
@@ -366,6 +488,9 @@ class ScriptWriter {
             const pageWithNewLine = this.findPageForLine(newLine);
             if (pageWithNewLine && pageWithNewLine !== this.currentPage) {
                 this.showPage(pageWithNewLine);
+            } else {
+                // Adjust height if staying on same page
+                this.adjustEditorHeight();
             }
         }, 50);
     }
@@ -613,6 +738,30 @@ class ScriptWriter {
         range.collapse(true);
         selection.removeAllRanges();
         selection.addRange(range);
+    }
+
+    getLinesUsedByElement(type) {
+        // Redirect to the accurate PDF-based calculation
+        // This method is kept for compatibility but uses the new accurate logic
+        return 1; // Simplified for compatibility, real calculation happens elsewhere
+    }
+
+    adjustEditorHeight() {
+        // Calculate the total height needed for all visible content on current page
+        const visibleLines = Array.from(this.editor.querySelectorAll('.script-line[style*="display: block"], .script-line:not([style*="display: none"])'));
+        
+        let totalHeight = 0;
+        visibleLines.forEach(line => {
+            const lineHeight = line.getBoundingClientRect().height;
+            totalHeight += lineHeight;
+        });
+        
+        // Add padding for comfortable viewing and editing
+        totalHeight += 150;
+        
+        // Ensure the editor has enough height to show all content
+        const minHeight = Math.max(500, totalHeight);
+        this.editor.style.minHeight = `${minHeight}px`;
     }
 }
 
