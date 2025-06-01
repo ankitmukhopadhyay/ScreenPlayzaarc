@@ -8,6 +8,7 @@ class ScriptWriter {
             content: '',
             lastModified: new Date()
         };
+        this.userSetType = false; // Track if user manually set element type
         
         this.init();
     }
@@ -72,13 +73,15 @@ class ScriptWriter {
     }
 
     handleInput() {
-        const selection = window.getSelection();
-        const range = selection.getRangeAt(0);
         const currentLine = this.getCurrentLine();
         
-        if (currentLine) {
+        // Only auto-format if the user hasn't manually set the type
+        if (currentLine && !this.userSetType) {
             this.autoFormat(currentLine);
         }
+        
+        // Reset the flag after handling input
+        this.userSetType = false;
     }
 
     handleKeydown(e) {
@@ -103,7 +106,7 @@ class ScriptWriter {
     }
 
     handleEnterKey(currentLine) {
-        const currentType = currentLine ? currentLine.dataset.type : 'action';
+        const currentType = currentLine ? currentLine.dataset.type : 'scene-heading';
         let nextType = this.getNextElementType(currentType);
         
         // Special handling for character -> dialogue
@@ -141,18 +144,22 @@ class ScriptWriter {
     autoFormat(line) {
         const text = line.textContent.trim().toUpperCase();
         
-        // Auto-detect scene headings
-        if (text.match(/^(INT\.|EXT\.|INTERIOR|EXTERIOR)/)) {
+        // Only auto-detect very specific and obvious cases
+        // Auto-detect scene headings (INT./EXT. at the beginning)
+        if (text.match(/^(INT\.|EXT\.)\s/)) {
             this.setLineType(line, 'scene-heading');
         }
-        // Auto-detect transitions
-        else if (text.match(/(FADE IN:|FADE OUT\.|CUT TO:|DISSOLVE TO:)$/)) {
-            this.setLineType(line, 'transition');
+        // Auto-detect specific transitions (only exact matches)
+        else if (text === 'FADE IN:' || text === 'FADE OUT.' || text === 'CUT TO:' || text === 'DISSOLVE TO:') {
+            if (text === 'FADE IN:') {
+                this.setLineType(line, 'fade-in');
+            } else if (text === 'FADE OUT.') {
+                this.setLineType(line, 'fade-out');
+            } else {
+                this.setLineType(line, 'transition');
+            }
         }
-        // Auto-detect character names (all caps, possibly with (V.O.) or (O.S.))
-        else if (text.match(/^[A-Z][A-Z\s]+(\(.*\))?$/) && text.length < 50) {
-            this.setLineType(line, 'character');
-        }
+        // Remove automatic character detection - let users manually set this
     }
 
     setLineType(line, type) {
@@ -165,7 +172,7 @@ class ScriptWriter {
         this.elementType.value = type;
     }
 
-    insertNewLine(type = 'action') {
+    insertNewLine(type = 'scene-heading') {
         const newLine = document.createElement('div');
         newLine.className = `script-line ${type}`;
         newLine.dataset.type = type;
@@ -205,11 +212,11 @@ class ScriptWriter {
     }
 
     getNextElementType(currentType) {
-        const typeOrder = ['action', 'scene-heading', 'character', 'dialogue', 'parenthetical', 'transition'];
+        const typeOrder = ['scene-heading', 'action', 'character', 'dialogue', 'parenthetical', 'transition'];
         const currentIndex = typeOrder.indexOf(currentType);
         return currentIndex !== -1 && currentIndex < typeOrder.length - 1 
             ? typeOrder[currentIndex + 1] 
-            : 'action';
+            : 'scene-heading';
     }
 
     cycleElementType() {
@@ -218,6 +225,7 @@ class ScriptWriter {
         
         const nextType = this.getNextElementType(currentLine.dataset.type);
         this.setLineType(currentLine, nextType);
+        this.userSetType = true; // Mark that user manually set the type
     }
 
     detectCurrentElementType() {
@@ -470,6 +478,7 @@ function changeElementType() {
     if (currentLine) {
         const newType = document.getElementById('elementType').value;
         scriptWriter.setLineType(currentLine, newType);
+        scriptWriter.userSetType = true; // Mark that user manually set the type
     }
 }
 
