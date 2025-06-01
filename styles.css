@@ -261,7 +261,7 @@ body {
 
 /* Character Names */
 .script-line.character {
-    text-align: left;
+    text-align: center;
     margin: 2em 0 0 3.5in;
     font-weight: bold;
     text-transform: uppercase;
@@ -270,14 +270,14 @@ body {
 
 /* Dialogue */
 .script-line.dialogue {
-    text-align: left;
+    text-align: center;
     margin: 0 0 1em 2.5in;
     max-width: 3.5in;
 }
 
 /* Parentheticals */
 .script-line.parenthetical {
-    text-align: left;
+    text-align: center;
     margin: 0 0 0 3in;
     font-style: italic;
     max-width: 2in;
@@ -371,11 +371,13 @@ body {
     
     .script-line.character {
         margin-left: 2in;
+        text-align: center;
     }
     
     .script-line.dialogue {
         margin-left: 1.5in;
         max-width: 4in;
+        text-align: center;
     }
     
     .main-content {

@@ -448,9 +448,9 @@ function exportToDoc() {
             <style>
                 body { font-family: 'Courier New', monospace; font-size: 12pt; line-height: 1.5; margin: 1in; }
                 .scene-heading, .fade-in, .fade-out, .transition { font-weight: bold; text-transform: uppercase; }
-                .character { margin-left: 3.5in; font-weight: bold; text-transform: uppercase; }
-                .dialogue { margin-left: 2.5in; max-width: 3.5in; }
-                .parenthetical { margin-left: 3in; font-style: italic; }
+                .character { margin-left: 3.5in; font-weight: bold; text-transform: uppercase; text-align: center; }
+                .dialogue { margin-left: 2.5in; max-width: 3.5in; text-align: center; }
+                .parenthetical { margin-left: 3in; font-style: italic; text-align: center; }
                 .transition { text-align: right; }
                 .action { margin: 1em 0; max-width: 6in; }
             </style>
