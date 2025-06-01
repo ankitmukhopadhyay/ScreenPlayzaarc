@@ -378,8 +378,14 @@ function exportToPDF() {
             yPosition = 20;
         }
         
-        const text = line.textContent.trim();
+        let text = line.textContent.trim();
         const type = line.dataset.type;
+        
+        // Apply uppercase transformation for specific element types (matching CSS behavior)
+        if (type === 'scene-heading' || type === 'character' || type === 'transition' || 
+            type === 'fade-in' || type === 'fade-out') {
+            text = text.toUpperCase();
+        }
         
         let xPosition = 20;
         let fontStyle = 'normal';
@@ -453,8 +459,15 @@ function exportToDoc() {
     `;
     
     lines.forEach(line => {
-        const text = line.textContent.trim();
+        let text = line.textContent.trim();
         const type = line.dataset.type;
+        
+        // Apply uppercase transformation for specific element types (matching CSS behavior)
+        if (type === 'scene-heading' || type === 'character' || type === 'transition' || 
+            type === 'fade-in' || type === 'fade-out') {
+            text = text.toUpperCase();
+        }
+        
         docContent += `<p class="${type}">${text}</p>`;
     });
     
