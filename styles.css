@@ -1,0 +1,447 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', 'Courier', monospace;
+    background-color: #f5f5f5;
+    color: #333;
+    overflow: hidden;
+}
+
+/* App Container */
+.app-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logo i {
+    font-size: 1.5rem;
+}
+
+.logo h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-family: 'Arial', sans-serif;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Arial', sans-serif;
+}
+
+.btn-primary {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #45a049;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background-color: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.btn-secondary:hover {
+    background-color: rgba(255,255,255,0.3);
+    transform: translateY(-1px);
+}
+
+.btn-small {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.btn-small:hover {
+    background-color: #d0d0d0;
+}
+
+/* Export Dropdown */
+.export-dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    overflow: hidden;
+    display: none;
+    z-index: 1000;
+    min-width: 180px;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-menu button {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: white;
+    color: #333;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dropdown-menu button:hover {
+    background-color: #f5f5f5;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Toolbar */
+.toolbar {
+    background: white;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.formatting-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.formatting-controls label {
+    font-family: 'Arial', sans-serif;
+    font-weight: 500;
+}
+
+.formatting-controls select {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: 'Arial', sans-serif;
+    background: white;
+}
+
+.scene-controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Editor Container */
+.editor-container {
+    flex: 1;
+    background: white;
+    margin: 1rem 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.page-info {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* Script Editor */
+.script-editor {
+    flex: 1;
+    padding: 2rem 3rem;
+    font-family: 'Courier New', 'Courier', monospace;
+    font-size: 12pt;
+    line-height: 1.5;
+    background: white;
+    overflow-y: auto;
+    outline: none;
+    max-width: 8.5in;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.script-editor:focus {
+    outline: none;
+}
+
+/* Script Line Types */
+.script-line {
+    margin: 0;
+    padding: 0;
+    min-height: 1.5em;
+    white-space: pre-wrap;
+    position: relative;
+}
+
+/* FADE IN/OUT */
+.script-line.fade-in,
+.script-line.fade-out {
+    text-align: left;
+    font-weight: bold;
+    margin: 2em 0 1em 0;
+    text-transform: uppercase;
+}
+
+/* Scene Headings (INT./EXT.) */
+.script-line.scene-heading {
+    font-weight: bold;
+    text-transform: uppercase;
+    margin: 2em 0 1em 0;
+    text-align: left;
+}
+
+/* Action/Description */
+.script-line.action {
+    text-align: left;
+    margin: 1em 0;
+    max-width: 6in;
+}
+
+/* Character Names */
+.script-line.character {
+    text-align: left;
+    margin: 2em 0 0 3.5in;
+    font-weight: bold;
+    text-transform: uppercase;
+    max-width: 2in;
+}
+
+/* Dialogue */
+.script-line.dialogue {
+    text-align: left;
+    margin: 0 0 1em 2.5in;
+    max-width: 3.5in;
+}
+
+/* Parentheticals */
+.script-line.parenthetical {
+    text-align: left;
+    margin: 0 0 0 3in;
+    font-style: italic;
+    max-width: 2in;
+}
+
+/* Transitions */
+.script-line.transition {
+    text-align: right;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin: 2em 0 1em 0;
+}
+
+/* Status Bar */
+.status-bar {
+    background: #2c3e50;
+    color: white;
+    padding: 0.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.85rem;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    min-width: 400px;
+    max-width: 90vw;
+}
+
+.modal-content h3 {
+    margin-bottom: 1rem;
+    font-family: 'Arial', sans-serif;
+    color: #333;
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-family: 'Arial', sans-serif;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .script-editor {
+        padding: 1rem;
+        font-size: 11pt;
+    }
+    
+    .script-line.character {
+        margin-left: 2in;
+    }
+    
+    .script-line.dialogue {
+        margin-left: 1.5in;
+        max-width: 4in;
+    }
+    
+    .main-content {
+        margin: 0.5rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .header,
+    .toolbar,
+    .status-bar,
+    .page-info {
+        display: none;
+    }
+    
+    .editor-container {
+        margin: 0;
+        box-shadow: none;
+        border-radius: 0;
+    }
+    
+    .script-editor {
+        margin: 0;
+        padding: 1in;
+        max-width: none;
+        width: 100%;
+    }
+}
+
+/* Scrollbar Styling */
+.script-editor::-webkit-scrollbar {
+    width: 8px;
+}
+
+.script-editor::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.script-editor::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.script-editor::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.script-line {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Focus and Selection Styles */
+.script-line:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+::selection {
+    background-color: #667eea;
+    color: white;
+} 
