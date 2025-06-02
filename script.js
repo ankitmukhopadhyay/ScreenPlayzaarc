@@ -385,9 +385,20 @@ class ScriptWriter {
     handleInput() {
         const currentLine = this.getCurrentLine();
         
-        // Only auto-format if the user hasn't manually set the type
-        if (currentLine && !this.userSetType) {
-            this.autoFormat(currentLine);
+        if (currentLine) {
+            const text = currentLine.textContent.trim();
+            const currentType = currentLine.dataset.type;
+            
+            // Special case: If this is a dialogue line starting with "(", convert to parenthetical
+            if (currentType === 'dialogue' && text.startsWith('(') && !this.userSetType) {
+                this.setLineType(currentLine, 'parenthetical');
+                return; // Exit early to avoid other auto-formatting
+            }
+            
+            // Only auto-format if the user hasn't manually set the type
+            if (!this.userSetType) {
+                this.autoFormat(currentLine);
+            }
         }
         
         // Reset the flag after handling input
