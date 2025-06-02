@@ -1,4 +1,4 @@
-// ScriptWriter Pro - Professional Screenwriting Software
+// ScreenPlayzaarc - Professional Screenwriting Software
 class ScriptWriter {
     constructor() {
         this.editor = document.getElementById('scriptEditor');
@@ -6,7 +6,10 @@ class ScriptWriter {
         this.currentScript = {
             title: 'Untitled Script',
             content: '',
-            lastModified: new Date()
+            lastModified: new Date(),
+            created: new Date(),
+            version: '1.0.0',
+            format: 'szaarc'
         };
         this.userSetType = false; // Track if user manually set element type
         this.currentPage = 1;
@@ -719,14 +722,35 @@ class ScriptWriter {
     saveToLocalStorage() {
         this.currentScript.content = this.editor.innerHTML;
         this.currentScript.lastModified = new Date();
-        localStorage.setItem('scriptwriter_current_script', JSON.stringify(this.currentScript));
+        
+        const szaarcData = {
+            format: 'szaarc',
+            version: '1.0.0',
+            application: 'ScreenPlayzaarc',
+            title: this.currentScript.title,
+            content: this.currentScript.content,
+            created: this.currentScript.created.toISOString(),
+            lastModified: this.currentScript.lastModified.toISOString(),
+            wordCount: document.getElementById('wordCount').textContent || '0',
+            pageCount: document.getElementById('totalPages').textContent || '1'
+        };
+        
+        localStorage.setItem('screenplayzaarc_current_script', JSON.stringify(szaarcData));
     }
 
     loadFromLocalStorage() {
-        const saved = localStorage.getItem('scriptwriter_current_script');
+        const saved = localStorage.getItem('screenplayzaarc_current_script');
         if (saved) {
             try {
-                this.currentScript = JSON.parse(saved);
+                const szaarcData = JSON.parse(saved);
+                this.currentScript = {
+                    title: szaarcData.title || 'Untitled Script',
+                    content: szaarcData.content || '',
+                    lastModified: new Date(szaarcData.lastModified || new Date()),
+                    created: new Date(szaarcData.created || new Date()),
+                    version: szaarcData.version || '1.0.0',
+                    format: 'szaarc'
+                };
                 // Don't auto-load content to preserve the example
                 // this.editor.innerHTML = this.currentScript.content;
             } catch (e) {
@@ -790,11 +814,17 @@ function newScript() {
         scriptWriter.currentScript = {
             title: 'Untitled Script',
             content: '',
-            lastModified: new Date()
+            lastModified: new Date(),
+            created: new Date(),
+            version: '1.0.0',
+            format: 'szaarc'
         };
         scriptWriter.updateWordCount();
         scriptWriter.calculatePages();
         scriptWriter.showPage(1);
+        
+        // Update window title
+        document.title = 'ScreenPlayzaarc - Untitled Script';
     }
 }
 
@@ -813,18 +843,33 @@ function confirmSave() {
         scriptWriter.currentScript.title = title;
         scriptWriter.saveToLocalStorage();
         
-        // Also save as downloadable file
-        const content = document.getElementById('scriptEditor').innerHTML;
-        const blob = new Blob([content], { type: 'text/html' });
+        // Create .szaarc file for download
+        const scriptContent = document.getElementById('scriptEditor').innerHTML;
+        const szaarcData = {
+            format: 'szaarc',
+            version: '1.0.0',
+            application: 'ScreenPlayzaarc',
+            title: title,
+            content: scriptContent,
+            created: scriptWriter.currentScript.created.toISOString(),
+            lastModified: new Date().toISOString(),
+            wordCount: document.getElementById('wordCount').textContent || '0',
+            pageCount: document.getElementById('totalPages').textContent || '1'
+        };
+        
+        const blob = new Blob([JSON.stringify(szaarcData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${title}.html`;
+        a.download = `${title}.szaarc`;
         a.click();
         URL.revokeObjectURL(url);
         
         closeSaveModal();
-        updateStatus('Script saved successfully!');
+        updateStatus('Script saved as .szaarc file!');
+        
+        // Update window title
+        document.title = `ScreenPlayzaarc - ${title}`;
     }
 }
 
@@ -920,6 +965,8 @@ function exportToDoc() {
     let docContent = `
         <html>
         <head>
+            <meta charset="UTF-8">
+            <title>${scriptWriter.currentScript.title || 'Untitled Script'} - ScreenPlayzaarc</title>
             <style>
                 body { font-family: 'Courier New', monospace; font-size: 12pt; line-height: 1.5; margin: 1in; }
                 .scene-heading, .fade-in, .fade-out, .transition { font-weight: bold; text-transform: uppercase; }
@@ -1025,5 +1072,5 @@ function goToPage(pageNumber) {
 let scriptWriter;
 document.addEventListener('DOMContentLoaded', () => {
     scriptWriter = new ScriptWriter();
-    updateStatus('ScriptWriter Pro loaded - Ready to write!');
+    updateStatus('ScreenPlayzaarc loaded - Ready to write!');
 }); 

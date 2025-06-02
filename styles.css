@@ -245,6 +245,7 @@ body {
     font-size: 12pt;
     line-height: 1.2;
     background: white;
+    color: #333;
     overflow-y: auto;
     outline: none;
     max-width: 8.5in;
@@ -252,10 +253,13 @@ body {
     width: 100%;
     min-height: 500px;
     max-height: calc(100vh - 250px);
+    cursor: text;
+    caret-color: #333;
 }
 
 .script-editor:focus {
     outline: none;
+    caret-color: #333;
 }
 
 /* Script Line Types */
@@ -265,6 +269,26 @@ body {
     min-height: 1.2em;
     white-space: pre-wrap;
     position: relative;
+    color: #333;
+    cursor: text;
+    outline: none;
+}
+
+.script-line:focus {
+    outline: none;
+    caret-color: #333;
+    background-color: rgba(102, 126, 234, 0.05);
+}
+
+.script-editor[contenteditable="true"]:focus {
+    outline: none;
+    caret-color: #333;
+}
+
+.script-line:empty:before {
+    content: attr(data-placeholder);
+    color: #999;
+    pointer-events: none;
 }
 
 /* FADE IN/OUT */
@@ -274,6 +298,7 @@ body {
     font-weight: bold;
     margin: 1.5em 0 0.8em 0;
     text-transform: uppercase;
+    color: #333;
 }
 
 /* Scene Headings (INT./EXT.) */
@@ -282,6 +307,7 @@ body {
     text-transform: uppercase;
     margin: 1.5em 0 0.8em 0;
     text-align: left;
+    color: #333;
 }
 
 /* Action/Description */
@@ -289,6 +315,7 @@ body {
     text-align: left;
     margin: 0.8em 0;
     max-width: 6in;
+    color: #333;
 }
 
 /* Character Names */
@@ -298,6 +325,7 @@ body {
     font-weight: bold;
     text-transform: uppercase;
     max-width: 2in;
+    color: #333;
 }
 
 /* Dialogue */
@@ -305,6 +333,7 @@ body {
     text-align: center;
     margin: 0 0 0.8em 2.5in;
     max-width: 3.5in;
+    color: #333;
 }
 
 /* Parentheticals */
@@ -313,6 +342,7 @@ body {
     margin: 0 0 0 3in;
     font-style: italic;
     max-width: 2in;
+    color: #333;
 }
 
 /* Transitions */
@@ -321,6 +351,7 @@ body {
     font-weight: bold;
     text-transform: uppercase;
     margin: 1.5em 0 0.8em 0;
+    color: #333;
 }
 
 /* Status Bar */
@@ -489,12 +520,33 @@ body {
 
 /* Focus and Selection Styles */
 .script-line:focus {
-    outline: 2px solid #667eea;
-    outline-offset: 2px;
-    border-radius: 2px;
+    outline: none;
+    caret-color: #333;
+    background-color: rgba(102, 126, 234, 0.05);
+}
+
+.script-editor[contenteditable="true"]:focus {
+    outline: none;
+    caret-color: #333;
 }
 
 ::selection {
     background-color: #667eea;
     color: white;
+}
+
+/* Cursor visibility enhancement */
+.script-editor,
+.script-line {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+/* Ensure cursor is always visible in contenteditable */
+.script-editor[contenteditable="true"],
+.script-line[contenteditable="true"] {
+    cursor: text;
+    caret-color: #333 !important;
 } 

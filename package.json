@@ -1,0 +1,83 @@
+{
+  "name": "screenplayzaarc",
+  "version": "1.0.0",
+  "description": "ScreenPlayzaarc - Professional Screenwriting Software",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win --publish=never",
+    "build-mac": "electron-builder --mac",
+    "build-linux": "electron-builder --linux",
+    "dist": "electron-builder --publish=never",
+    "build-portable": "electron-builder --win portable --publish=never"
+  },
+  "keywords": [
+    "screenwriting",
+    "script",
+    "screenplay",
+    "writing",
+    "film",
+    "television",
+    "szaarc"
+  ],
+  "author": "ScreenPlayzaarc Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "build": {
+    "appId": "com.screenplayzaarc.app",
+    "productName": "ScreenPlayzaarc",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules",
+      "!dist",
+      "!*.log"
+    ],
+    "fileAssociations": [
+      {
+        "ext": "szaarc",
+        "name": "ScreenPlayzaarc Script",
+        "description": "ScreenPlayzaarc Script File",
+        "mimeType": "application/x-szaarc",
+        "role": "Editor"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker",
+      "signAndEditExecutable": false,
+      "signDlls": false
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "ScreenPlayzaarc-Portable.exe"
+    }
+  }
+} 
