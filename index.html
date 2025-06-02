@@ -4,128 +4,353 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ScriptWriter Pro - Professional Screenwriting Software</title>
-    <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-docx-js/0.4.1/html-docx.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .logo i {
+            font-size: 2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 4rem 0;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #4CAF50;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .cta-button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(76, 175, 80, 0.4);
+        }
+
+        /* Features Section */
+        .features {
+            background: white;
+            padding: 4rem 0;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #333;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .feature-card {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-card i {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* Screenshots Section */
+        .screenshots {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        .screenshots h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+
+        .screenshot-placeholder {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 800px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .screenshot-content {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            text-align: left;
+            color: #333;
+        }
+
+        .script-demo .demo-line {
+            margin: 0.5rem 0;
+        }
+
+        .demo-fade { font-weight: bold; }
+        .demo-scene { font-weight: bold; text-transform: uppercase; }
+        .demo-action { margin: 0.5rem 0; }
+        .demo-character { text-align: center; font-weight: bold; text-transform: uppercase; margin: 1rem 0 0 3.5in; }
+        .demo-dialogue { text-align: center; margin: 0 0 0.5rem 2.5in; }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 4rem 0;
+            text-align: center;
+            color: white;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .cta-section p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        /* Footer */
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 0 1rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feature-card, .screenshot-placeholder {
+            animation: fadeInUp 0.6s ease-out;
+        }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo">
-                <i class="fas fa-film"></i>
-                <h1>ScriptWriter Pro</h1>
-            </div>
-            <div class="header-actions">
-                <button class="btn btn-secondary" onclick="newScript()">
-                    <i class="fas fa-file"></i> New Script
-                </button>
-                <button class="btn btn-secondary" onclick="saveScript()">
-                    <i class="fas fa-save"></i> Save
-                </button>
-                <div class="export-dropdown">
-                    <button class="btn btn-primary" onclick="toggleExportMenu()">
-                        <i class="fas fa-download"></i> Export <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="dropdown-menu" id="exportMenu">
-                        <button onclick="exportToPDF()">
-                            <i class="fas fa-file-pdf"></i> Export as PDF
-                        </button>
-                        <button onclick="exportToDoc()">
-                            <i class="fas fa-file-word"></i> Export as DOC
-                        </button>
-                    </div>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <div class="logo">
+                    <i class="fas fa-film"></i>
+                    <span>ScriptWriter Pro</span>
                 </div>
-            </div>
-        </header>
+            </nav>
+        </div>
+    </header>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Toolbar -->
-            <div class="toolbar">
-                <div class="formatting-controls">
-                    <label for="elementType">Element Type:</label>
-                    <select id="elementType" onchange="changeElementType()">
-                        <option value="scene-heading">Scene Heading</option>
-                        <option value="action">Action</option>
-                        <option value="character">Character</option>
-                        <option value="dialogue">Dialogue</option>
-                        <option value="parenthetical">Parenthetical</option>
-                        <option value="transition">Transition</option>
-                        <option value="fade-in">FADE IN:</option>
-                        <option value="fade-out">FADE OUT.</option>
-                    </select>
-                </div>
-                <div class="scene-controls">
-                    <button class="btn btn-small" onclick="insertSceneHeading('INT')">INT.</button>
-                    <button class="btn btn-small" onclick="insertSceneHeading('EXT')">EXT.</button>
-                    <button class="btn btn-small" onclick="insertTransition('FADE IN')">FADE IN:</button>
-                    <button class="btn btn-small" onclick="insertTransition('FADE OUT')">FADE OUT.</button>
-                    <button class="btn btn-small" onclick="insertTransition('CUT TO')">CUT TO:</button>
-                </div>
-            </div>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Professional Screenwriting Made Simple</h1>
+            <p>Write industry-standard screenplays with automatic formatting, intelligent pagination, and professional export options. Start your next blockbuster today.</p>
+            <a href="script.html" class="cta-button">
+                <i class="fas fa-edit"></i>
+                New Script
+            </a>
+        </div>
+    </section>
 
-            <!-- Script Editor -->
-            <div class="editor-container">
-                <div class="page-info">
-                    <div class="page-navigation">
-                        <button class="btn btn-small" onclick="goToPreviousPage()" id="prevPageBtn">
-                            <i class="fas fa-chevron-left"></i> Previous
-                        </button>
-                        <span class="page-display">
-                            Page 
-                            <input type="number" id="currentPageInput" min="1" value="1" onchange="goToPage(this.value)">
-                            of <span id="totalPages">1</span>
-                        </span>
-                        <button class="btn btn-small" onclick="goToNextPage()" id="nextPageBtn">
-                            Next <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-                    <span class="word-count">Words: <span id="wordCount">0</span></span>
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <h2>Powerful Features for Professional Writers</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <i class="fas fa-magic"></i>
+                    <h3>Smart Auto-Formatting</h3>
+                    <p>Intelligent detection of script elements. Type "INT. BEDROOM" and watch it automatically format as a scene heading.</p>
                 </div>
-                
-                <div class="script-editor" id="scriptEditor" contenteditable="true">
-                    <div class="script-line fade-in" data-type="fade-in">
-                        FADE IN:
-                    </div>
-                    <div class="script-line scene-heading" data-type="scene-heading">
-                        INT. LIVING ROOM - DAY
-                    </div>
-                    <div class="script-line action" data-type="action">
-                        A cozy living room bathed in warm sunlight. JANE (30s) sits at her laptop, typing furiously.
-                    </div>
-                    <div class="script-line character" data-type="character">
-                        JANE
-                    </div>
-                    <div class="script-line dialogue" data-type="dialogue">
-                        This is going to be the best script ever written.
-                    </div>
+                <div class="feature-card">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>Professional Pagination</h3>
+                    <p>Industry-standard page breaks with perfect synchronization between view and PDF export. Navigate page by page like a pro.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-download"></i>
+                    <h3>Multiple Export Formats</h3>
+                    <p>Export your scripts as PDF or DOC with perfect formatting, ready for production or submission.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-keyboard"></i>
+                    <h3>Efficient Workflow</h3>
+                    <p>Keyboard shortcuts, smart element cycling, and auto-save keep you in the creative flow.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h3>Responsive Design</h3>
+                    <p>Write anywhere, anytime. Fully responsive design works on desktop, tablet, and mobile devices.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-paste"></i>
+                    <h3>Smart Paste Detection</h3>
+                    <p>Copy script content from anywhere and watch it automatically format with correct element types.</p>
                 </div>
             </div>
         </div>
+    </section>
 
-        <!-- Status Bar -->
-        <div class="status-bar">
-            <span>Ready</span>
-            <span class="status-right">
-                <span id="cursorPosition">Line 1, Column 1</span>
-            </span>
-        </div>
-    </div>
-
-    <!-- Modals -->
-    <div class="modal" id="saveModal">
-        <div class="modal-content">
-            <h3>Save Script</h3>
-            <input type="text" id="scriptTitle" placeholder="Enter script title..." value="Untitled Script">
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeSaveModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="confirmSave()">Save</button>
+    <!-- Screenshots Section -->
+    <section class="screenshots">
+        <div class="container">
+            <h2>See It In Action</h2>
+            <div class="screenshot-placeholder">
+                <h3 style="margin-bottom: 1rem; color: #667eea;">Professional Script Formatting</h3>
+                <div class="screenshot-content">
+                    <div class="script-demo">
+                        <div class="demo-line demo-fade">FADE IN:</div>
+                        <div class="demo-line demo-scene">INT. COFFEE SHOP - MORNING</div>
+                        <div class="demo-line demo-action">A bustling coffee shop filled with the morning rush. Steam rises from freshly brewed coffee as customers chat and work on laptops.</div>
+                        <div class="demo-line demo-character">SARAH</div>
+                        <div class="demo-line demo-dialogue">I'll take a large coffee, black. And make it strong - it's going to be a long day.</div>
+                    </div>
+                </div>
+                <p style="margin-top: 1rem; color: #666;">Automatic formatting, perfect alignment, industry-standard layout</p>
             </div>
         </div>
-    </div>
+    </section>
 
-    <script src="script.js"></script>
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready to Write Your Next Script?</h2>
+            <p>Join thousands of screenwriters who trust ScriptWriter Pro for their professional projects.</p>
+            <a href="script.html" class="cta-button">
+                <i class="fas fa-rocket"></i>
+                Start Writing Now
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 ScriptWriter Pro. Professional screenwriting software for modern writers.</p>
+        </div>
+    </footer>
 </body>
 </html> 

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScriptWriter Pro - Professional Screenwriting Software</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-docx-js/0.4.1/html-docx.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-film"></i>
+                <h1>ScriptWriter Pro</h1>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="newScript()">
+                    <i class="fas fa-file"></i> New Script
+                </button>
+                <button class="btn btn-secondary" onclick="saveScript()">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                <div class="export-dropdown">
+                    <button class="btn btn-primary" onclick="toggleExportMenu()">
+                        <i class="fas fa-download"></i> Export <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="dropdown-menu" id="exportMenu">
+                        <button onclick="exportToPDF()">
+                            <i class="fas fa-file-pdf"></i> Export as PDF
+                        </button>
+                        <button onclick="exportToDoc()">
+                            <i class="fas fa-file-word"></i> Export as DOC
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="formatting-controls">
+                    <label for="elementType">Element Type:</label>
+                    <select id="elementType" onchange="changeElementType()">
+                        <option value="scene-heading">Scene Heading</option>
+                        <option value="action">Action</option>
+                        <option value="character">Character</option>
+                        <option value="dialogue">Dialogue</option>
+                        <option value="parenthetical">Parenthetical</option>
+                        <option value="transition">Transition</option>
+                        <option value="fade-in">FADE IN:</option>
+                        <option value="fade-out">FADE OUT.</option>
+                    </select>
+                </div>
+                <div class="scene-controls">
+                    <button class="btn btn-small" onclick="insertSceneHeading('INT')">INT.</button>
+                    <button class="btn btn-small" onclick="insertSceneHeading('EXT')">EXT.</button>
+                    <button class="btn btn-small" onclick="insertTransition('FADE IN')">FADE IN:</button>
+                    <button class="btn btn-small" onclick="insertTransition('FADE OUT')">FADE OUT.</button>
+                    <button class="btn btn-small" onclick="insertTransition('CUT TO')">CUT TO:</button>
+                </div>
+            </div>
+
+            <!-- Script Editor -->
+            <div class="editor-container">
+                <div class="page-info">
+                    <div class="page-navigation">
+                        <button class="btn btn-small" onclick="goToPreviousPage()" id="prevPageBtn">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <span class="page-display">
+                            Page 
+                            <input type="number" id="currentPageInput" min="1" value="1" onchange="goToPage(this.value)">
+                            of <span id="totalPages">1</span>
+                        </span>
+                        <button class="btn btn-small" onclick="goToNextPage()" id="nextPageBtn">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <span class="word-count">Words: <span id="wordCount">0</span></span>
+                </div>
+                
+                <div class="script-editor" id="scriptEditor" contenteditable="true">
+                    <div class="script-line fade-in" data-type="fade-in">
+                        FADE IN:
+                    </div>
+                    <div class="script-line scene-heading" data-type="scene-heading">
+                        INT. LIVING ROOM - DAY
+                    </div>
+                    <div class="script-line action" data-type="action">
+                        A cozy living room bathed in warm sunlight. JANE (30s) sits at her laptop, typing furiously.
+                    </div>
+                    <div class="script-line character" data-type="character">
+                        JANE
+                    </div>
+                    <div class="script-line dialogue" data-type="dialogue">
+                        This is going to be the best script ever written.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span>Ready</span>
+            <span class="status-right">
+                <span id="cursorPosition">Line 1, Column 1</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="saveModal">
+        <div class="modal-content">
+            <h3>Save Script</h3>
+            <input type="text" id="scriptTitle" placeholder="Enter script title..." value="Untitled Script">
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeSaveModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmSave()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 

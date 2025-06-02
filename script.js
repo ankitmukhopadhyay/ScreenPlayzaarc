@@ -433,6 +433,8 @@ class ScriptWriter {
             nextType = 'dialogue';
         } else if (currentType === 'dialogue') {
             nextType = 'character';
+        } else if (currentType === 'parenthetical') {
+            nextType = 'dialogue';
         }
         
         this.insertNewLine(nextType);
