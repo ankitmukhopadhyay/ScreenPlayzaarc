@@ -56,31 +56,94 @@ class ScriptWriter {
 
         // Global keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            // Handle global shortcuts regardless of focus
             if (e.ctrlKey || e.metaKey) {
+                // Allow standard edit shortcuts to work naturally
+                if (['a', 'c', 'v', 'x', 'z'].includes(e.key.toLowerCase()) && !e.shiftKey) {
+                    // Let these work naturally, don't interfere
+                    return;
+                }
+                
                 switch (e.key) {
                     case 's':
                         e.preventDefault();
-                        this.saveScript();
-                        break;
+                        e.stopPropagation();
+                        saveScript();
+                        return false;
                     case 'n':
                         e.preventDefault();
-                        this.newScript();
-                        break;
+                        e.stopPropagation();
+                        newScript();
+                        return false;
                     case 'e':
-                        e.preventDefault();
-                        this.toggleExportMenu();
-                        break;
+                        if (e.shiftKey) {
+                            // Ctrl+Shift+E - Export as DOC
+                            e.preventDefault();
+                            e.stopPropagation();
+                            exportToDoc();
+                            return false;
+                        } else {
+                            // Ctrl+E - Export as PDF
+                            e.preventDefault();
+                            e.stopPropagation();
+                            exportToPDF();
+                            return false;
+                        }
                     case 'ArrowLeft':
                         e.preventDefault();
-                        this.goToPreviousPage();
-                        break;
+                        e.stopPropagation();
+                        goToPreviousPage();
+                        return false;
                     case 'ArrowRight':
                         e.preventDefault();
-                        this.goToNextPage();
-                        break;
+                        e.stopPropagation();
+                        goToNextPage();
+                        return false;
+                    case '1':
+                        // Ctrl+1 - Scene Heading
+                        e.preventDefault();
+                        e.stopPropagation();
+                        document.getElementById('elementType').value = 'scene-heading';
+                        changeElementType();
+                        return false;
+                    case '2':
+                        // Ctrl+2 - Action
+                        e.preventDefault();
+                        e.stopPropagation();
+                        document.getElementById('elementType').value = 'action';
+                        changeElementType();
+                        return false;
+                    case '3':
+                        // Ctrl+3 - Character
+                        e.preventDefault();
+                        e.stopPropagation();
+                        document.getElementById('elementType').value = 'character';
+                        changeElementType();
+                        return false;
+                    case '4':
+                        // Ctrl+4 - Dialogue
+                        e.preventDefault();
+                        e.stopPropagation();
+                        document.getElementById('elementType').value = 'dialogue';
+                        changeElementType();
+                        return false;
+                    case '5':
+                        // Ctrl+5 - Parenthetical
+                        e.preventDefault();
+                        e.stopPropagation();
+                        document.getElementById('elementType').value = 'parenthetical';
+                        changeElementType();
+                        return false;
+                    case '6':
+                        // Ctrl+6 - Transition
+                        e.preventDefault();
+                        e.stopPropagation();
+                        document.getElementById('elementType').value = 'transition';
+                        changeElementType();
+                        return false;
                 }
             }
-        });
+        }, true); // Use capture phase to ensure it gets handled first
 
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
