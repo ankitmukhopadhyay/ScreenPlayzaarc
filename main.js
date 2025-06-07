@@ -49,6 +49,9 @@ function createWindow() {
 
     // Set up the menu
     createMenu();
+    
+    // Set up IPC handlers
+    setupIpcHandlers();
 }
 
 function createMenu() {
@@ -81,7 +84,7 @@ function createMenu() {
                     label: 'Save As...',
                     accelerator: 'CmdOrCtrl+Shift+S',
                     click: () => {
-                        saveScriptAs();
+                        handleSaveAs();
                     }
                 },
                 { type: 'separator' },
@@ -424,23 +427,34 @@ function loadScriptIntoEditor(scriptData, filePath) {
                 // Load new content
                 editor.innerHTML = \`${scriptData.content.replace(/`/g, '\\`').replace(/\\/g, '\\\\')}\`;
                 
-                // Update script metadata
-                scriptWriter.currentScript = {
-                    title: "${scriptData.title ? scriptData.title.replace(/"/g, '\\"') : 'Untitled Script'}",
-                    content: \`${scriptData.content.replace(/`/g, '\\`').replace(/\\/g, '\\\\')}\`,
-                    lastModified: new Date("${scriptData.lastModified || new Date().toISOString()}"),
-                    created: new Date("${scriptData.created || new Date().toISOString()}"),
-                    version: "${scriptData.version || '1.0.0'}",
-                    format: "szaarc"
-                };
-                
-                // Update UI
-                scriptWriter.calculatePages();
-                scriptWriter.showPage(1);
-                scriptWriter.updateWordCount();
-                
-                // Update page title
-                document.title = "ScreenPlayzaarc - ${scriptData.title ? scriptData.title.replace(/"/g, '\\"') : 'Untitled Script'}";
+                // Update script metadata using the new method
+                if (typeof scriptWriter.loadScriptFromFile === 'function') {
+                    const scriptData = {
+                        title: "${scriptData.title ? scriptData.title.replace(/"/g, '\\"') : 'Untitled Script'}",
+                        content: \`${scriptData.content.replace(/`/g, '\\`').replace(/\\/g, '\\\\')}\`,
+                        lastModified: "${scriptData.lastModified || new Date().toISOString()}",
+                        created: "${scriptData.created || new Date().toISOString()}",
+                        version: "${scriptData.version || '1.0.0'}",
+                        format: "szaarc"
+                    };
+                    scriptWriter.loadScriptFromFile(scriptData, "${filePath ? filePath.replace(/\\/g, '\\\\') : ''}");
+                } else {
+                    // Fallback to old method
+                    scriptWriter.currentScript = {
+                        title: "${scriptData.title ? scriptData.title.replace(/"/g, '\\"') : 'Untitled Script'}",
+                        content: \`${scriptData.content.replace(/`/g, '\\`').replace(/\\/g, '\\\\')}\`,
+                        lastModified: new Date("${scriptData.lastModified || new Date().toISOString()}"),
+                        created: new Date("${scriptData.created || new Date().toISOString()}"),
+                        version: "${scriptData.version || '1.0.0'}",
+                        format: "szaarc"
+                    };
+                    
+                    // Update UI
+                    scriptWriter.calculatePages();
+                    scriptWriter.showPage(1);
+                    scriptWriter.updateWordCount();
+                    scriptWriter.updateDocumentTitle();
+                }
                 
                 // Update status
                 if (typeof updateStatus === 'function') {
@@ -475,68 +489,88 @@ function loadScriptIntoEditor(scriptData, filePath) {
     });
 }
 
+// Handle Save As from menu
+function handleSaveAs() {
+    mainWindow.webContents.executeJavaScript(`
+        // Call the renderer process saveScriptAs function
+        if (typeof saveScriptAs === 'function') {
+            saveScriptAs();
+            true; // Return success
+        } else {
+            console.error('saveScriptAs function not found in renderer');
+            false; // Return failure
+        }
+    `).then(success => {
+        if (!success) {
+            console.error('Failed to call saveScriptAs from renderer');
+            // Fallback to direct save dialog if needed
+            saveScriptAs();
+        }
+    }).catch(error => {
+        console.error('Error calling Save As:', error);
+        // Fallback to direct save dialog
+        saveScriptAs();
+    });
+}
+
 function saveScriptAs() {
-    dialog.showSaveDialog(mainWindow, {
-        title: 'Save ScreenPlayzaarc Script',
-        defaultPath: 'Untitled Script.szaarc',
-        filters: [
-            { name: 'ScreenPlayzaarc Scripts', extensions: ['szaarc'] },
-            { name: 'All Files', extensions: ['*'] }
-        ]
-    }).then(result => {
-        if (!result.canceled) {
-            mainWindow.webContents.executeJavaScript(`
-                // Create .szaarc file content
-                const scriptContent = document.getElementById('scriptEditor').innerHTML;
-                const title = document.getElementById('scriptTitle') ? 
-                    document.getElementById('scriptTitle').value || 'Untitled Script' : 'Untitled Script';
-                
-                const szaarcData = {
-                    format: 'szaarc',
-                    version: '1.0.0',
-                    application: 'ScreenPlayzaarc',
-                    title: title,
-                    content: scriptContent,
-                    created: window.scriptWriter ? 
-                        (scriptWriter.currentScript.created ? scriptWriter.currentScript.created.toISOString() : new Date().toISOString()) : 
-                        new Date().toISOString(),
-                    lastModified: new Date().toISOString(),
-                    wordCount: document.getElementById('wordCount').textContent || '0',
-                    pageCount: document.getElementById('totalPages').textContent || '1'
-                };
-                
-                // Return the JSON string
-                JSON.stringify(szaarcData, null, 2);
-            `).then(szaarcContent => {
+    mainWindow.webContents.executeJavaScript(`
+        // Get current script data
+        const scriptContent = document.getElementById('scriptEditor').innerHTML;
+        const title = scriptWriter.currentScript.title || 'Untitled Script';
+        
+        const szaarcData = {
+            format: 'szaarc',
+            version: '1.0.0',
+            application: 'ScreenPlayzaarc',
+            title: title,
+            content: scriptContent,
+            created: scriptWriter.currentScript.created ? scriptWriter.currentScript.created.toISOString() : new Date().toISOString(),
+            lastModified: new Date().toISOString(),
+            wordCount: document.getElementById('wordCount').textContent || '0',
+            pageCount: document.getElementById('totalPages').textContent || '1'
+        };
+        
+        // Return the data to main process
+        JSON.stringify(szaarcData, null, 2);
+    `).then(szaarcContent => {
+        const currentTitle = szaarcContent ? JSON.parse(szaarcContent).title : 'Untitled Script';
+        
+        dialog.showSaveDialog(mainWindow, {
+            title: 'Save ScreenPlayzaarc Script',
+            defaultPath: `${currentTitle}.szaarc`,
+            filters: [
+                { name: 'ScreenPlayzaarc Scripts', extensions: ['szaarc'] },
+                { name: 'All Files', extensions: ['*'] }
+            ]
+        }).then(result => {
+            if (!result.canceled) {
                 fs.writeFile(result.filePath, szaarcContent, 'utf8', (err) => {
                     if (err) {
                         dialog.showErrorBox('Error', 'Could not save file: ' + err.message);
                         return;
                     }
                     
-                    dialog.showMessageBox(mainWindow, {
-                        type: 'info',
-                        title: 'Save Complete',
-                        message: 'ScreenPlayzaarc script saved successfully!',
-                        detail: `Saved as: ${path.basename(result.filePath)}`,
-                        buttons: ['OK']
-                    });
+                    // Notify the renderer process that the file was saved
+                    mainWindow.webContents.executeJavaScript(`
+                        if (scriptWriter && scriptWriter.markAsSaved) {
+                            scriptWriter.markAsSaved("${result.filePath.replace(/\\/g, '\\\\')}");
+                        }
+                        if (typeof updateStatus === 'function') {
+                            updateStatus('Script saved successfully!');
+                        }
+                    `);
                     
                     // Update window title
                     const fileName = path.basename(result.filePath, '.szaarc');
                     mainWindow.setTitle(`ScreenPlayzaarc - ${fileName}`);
                     
-                    // Update script title in the application
-                    mainWindow.webContents.executeJavaScript(`
-                        if (window.scriptWriter) {
-                            scriptWriter.currentScript.title = '${fileName}';
-                        }
-                    `);
+                    console.log('Script saved successfully to:', result.filePath);
                 });
-            }).catch(err => {
-                dialog.showErrorBox('Error', 'Could not prepare file content: ' + err.message);
-            });
-        }
+            }
+        });
+    }).catch(err => {
+        dialog.showErrorBox('Error', 'Could not prepare file content: ' + err.message);
     });
 }
 
@@ -693,4 +727,49 @@ app.on('web-contents-created', (event, contents) => {
         event.preventDefault();
         shell.openExternal(url);
     });
-}); 
+});
+
+// Set up IPC handlers for file operations
+function setupIpcHandlers() {
+    // Handle save file to specific path
+    ipcMain.handle('save-file-to-path', async (event, filePath, content) => {
+        try {
+            await fs.promises.writeFile(filePath, content, 'utf8');
+            console.log('File saved successfully to:', filePath);
+            return { success: true };
+        } catch (error) {
+            console.error('Error saving file to path:', error);
+            return { success: false, error: error.message };
+        }
+    });
+    
+    // Handle save file dialog
+    ipcMain.handle('save-file-dialog', async (event, content, defaultName) => {
+        try {
+            const result = await dialog.showSaveDialog(mainWindow, {
+                title: 'Save ScreenPlayzaarc Script',
+                defaultPath: `${defaultName}.szaarc`,
+                filters: [
+                    { name: 'ScreenPlayzaarc Scripts', extensions: ['szaarc'] },
+                    { name: 'All Files', extensions: ['*'] }
+                ]
+            });
+            
+            if (!result.canceled && result.filePath) {
+                await fs.promises.writeFile(result.filePath, content, 'utf8');
+                
+                // Update window title
+                const fileName = path.basename(result.filePath, '.szaarc');
+                mainWindow.setTitle(`ScreenPlayzaarc - ${fileName}`);
+                
+                console.log('File saved successfully via dialog to:', result.filePath);
+                return { success: true, filePath: result.filePath };
+            }
+            
+            return { success: false, canceled: true };
+        } catch (error) {
+            console.error('Error in save file dialog:', error);
+            return { success: false, error: error.message };
+        }
+    });
+} 

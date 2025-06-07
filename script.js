@@ -17,6 +17,11 @@ class ScriptWriter {
         this.pages = [];
         this.allLines = []; // Keep track of all lines across all pages
         
+        // Add file management properties
+        this.currentFilePath = null; // Track the current file path
+        this.hasUnsavedChanges = false; // Track unsaved changes
+        this.isNewDocument = true; // Track if this is a new document
+        
         this.init();
     }
 
@@ -27,6 +32,7 @@ class ScriptWriter {
         this.loadFromLocalStorage();
         this.calculatePages();
         this.showPage(1);
+        this.updateDocumentTitle(); // Set initial title
     }
 
     setupEventListeners() {
@@ -36,6 +42,7 @@ class ScriptWriter {
             this.updateWordCount();
             this.autoSave();
             this.calculatePages();
+            this.markAsModified(); // Mark as modified when content changes
         });
 
         this.editor.addEventListener('keydown', (e) => {
@@ -87,6 +94,7 @@ class ScriptWriter {
             e.preventDefault();
             const text = (e.clipboardData || window.clipboardData).getData('text');
             this.insertFormattedText(text);
+            this.markAsModified(); // Mark as modified when pasting
         });
     }
 
@@ -800,36 +808,256 @@ class ScriptWriter {
         const minHeight = Math.max(500, totalHeight);
         this.editor.style.minHeight = `${minHeight}px`;
     }
+
+    updateDocumentTitle() {
+        let title = this.currentScript.title || 'Untitled Script';
+        
+        // If we have a file path, use the filename as the title
+        if (this.currentFilePath && !this.isNewDocument) {
+            const filename = this.currentFilePath.split(/[\\/]/).pop().replace('.szaarc', '');
+            title = filename;
+        }
+        
+        const asterisk = this.hasUnsavedChanges ? '*' : '';
+        const fullTitle = `ScreenPlayzaarc - ${title}${asterisk}`;
+        document.title = fullTitle;
+        
+        // Also update the main window title if we're in Electron
+        if (typeof require !== 'undefined') {
+            try {
+                const { remote } = require('electron');
+                if (remote && remote.getCurrentWindow) {
+                    remote.getCurrentWindow().setTitle(fullTitle);
+                }
+            } catch (e) {
+                // Fallback for newer Electron versions
+                if (window.electronAPI && window.electronAPI.setTitle) {
+                    window.electronAPI.setTitle(fullTitle);
+                }
+            }
+        }
+    }
+    
+    markAsModified() {
+        if (!this.hasUnsavedChanges) {
+            this.hasUnsavedChanges = true;
+            this.isNewDocument = this.isNewDocument || !this.currentFilePath; // Ensure new document flag is correct
+            this.updateDocumentTitle();
+        }
+    }
+    
+    markAsSaved(filePath = null) {
+        this.hasUnsavedChanges = false;
+        if (filePath) {
+            this.currentFilePath = filePath;
+            this.isNewDocument = false;
+        }
+        this.updateDocumentTitle();
+    }
+    
+    loadScriptFromFile(scriptData, filePath) {
+        // Update script content and metadata
+        this.currentScript = {
+            title: scriptData.title || 'Untitled Script',
+            content: scriptData.content,
+            lastModified: new Date(scriptData.lastModified || new Date()),
+            created: new Date(scriptData.created || new Date()),
+            version: scriptData.version || '1.0.0',
+            format: 'szaarc'
+        };
+        
+        // Update file tracking - this is important for save functionality
+        this.currentFilePath = filePath;
+        this.isNewDocument = false;
+        this.hasUnsavedChanges = false;
+        
+        // Update editor content
+        this.editor.innerHTML = scriptData.content;
+        
+        // Update UI
+        this.calculatePages();
+        this.showPage(1);
+        this.updateWordCount();
+        this.updateDocumentTitle();
+    }
 }
 
 // Global functions for UI interactions
 function newScript() {
-    if (confirm('Are you sure you want to start a new script? Any unsaved changes will be lost.')) {
-        const editor = document.getElementById('scriptEditor');
-        editor.innerHTML = `
-            <div class="script-line fade-in" data-type="fade-in">FADE IN:</div>
-            <div class="script-line scene-heading" data-type="scene-heading">INT. LOCATION - TIME</div>
-            <div class="script-line action" data-type="action">Enter your story description here.</div>
-        `;
-        scriptWriter.currentScript = {
-            title: 'Untitled Script',
-            content: '',
-            lastModified: new Date(),
-            created: new Date(),
-            version: '1.0.0',
-            format: 'szaarc'
-        };
-        scriptWriter.updateWordCount();
-        scriptWriter.calculatePages();
-        scriptWriter.showPage(1);
-        
-        // Update window title
-        document.title = 'ScreenPlayzaarc - Untitled Script';
+    if (scriptWriter.hasUnsavedChanges) {
+        const result = confirm('You have unsaved changes. Are you sure you want to start a new script? Any unsaved changes will be lost.');
+        if (!result) return;
     }
+    
+    const editor = document.getElementById('scriptEditor');
+    editor.innerHTML = `
+        <div class="script-line fade-in" data-type="fade-in">FADE IN:</div>
+        <div class="script-line scene-heading" data-type="scene-heading">INT. LOCATION - TIME</div>
+        <div class="script-line action" data-type="action">Enter your story description here.</div>
+    `;
+    
+    // Reset script object
+    scriptWriter.currentScript = {
+        title: 'Untitled Script',
+        content: '',
+        lastModified: new Date(),
+        created: new Date(),
+        version: '1.0.0',
+        format: 'szaarc'
+    };
+    
+    // Reset file tracking - very important for save functionality
+    scriptWriter.currentFilePath = null;
+    scriptWriter.isNewDocument = true;
+    scriptWriter.hasUnsavedChanges = false;
+    
+    // Update UI
+    scriptWriter.updateWordCount();
+    scriptWriter.calculatePages();
+    scriptWriter.showPage(1);
+    scriptWriter.updateDocumentTitle();
+    
+    // Clear localStorage to start fresh
+    localStorage.removeItem('screenplayzaarc_current_script');
 }
 
 function saveScript() {
+    // If this is a new document or no file path exists, show save dialog
+    if (scriptWriter.isNewDocument || !scriptWriter.currentFilePath) {
+        saveScriptAs();
+    } else {
+        // Save to existing file path
+        saveToExistingFile();
+    }
+}
+
+function saveToExistingFile() {
+    if (!scriptWriter.currentFilePath) {
+        saveScriptAs();
+        return;
+    }
+    
+    // Create .szaarc file content
+    const scriptContent = document.getElementById('scriptEditor').innerHTML;
+    const title = scriptWriter.currentScript.title;
+    
+    const szaarcData = {
+        format: 'szaarc',
+        version: '1.0.0',
+        application: 'ScreenPlayzaarc',
+        title: title,
+        content: scriptContent,
+        created: scriptWriter.currentScript.created.toISOString(),
+        lastModified: new Date().toISOString(),
+        wordCount: document.getElementById('wordCount').textContent || '0',
+        pageCount: document.getElementById('totalPages').textContent || '1'
+    };
+    
+    // If we're in Electron, use the main process to save
+    if (typeof require !== 'undefined') {
+        try {
+            const { ipcRenderer } = require('electron');
+            ipcRenderer.invoke('save-file-to-path', scriptWriter.currentFilePath, JSON.stringify(szaarcData, null, 2))
+                .then((result) => {
+                    if (result && result.success) {
+                        scriptWriter.markAsSaved(scriptWriter.currentFilePath);
+                        updateStatus('Script saved successfully!');
+                    } else {
+                        throw new Error('Save operation failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving file:', error);
+                    updateStatus('Error saving script: ' + error.message);
+                    // If save fails, offer save-as as fallback
+                    if (confirm('Save failed. Would you like to try Save As instead?')) {
+                        saveScriptAs();
+                    }
+                });
+        } catch (e) {
+            console.error('IPC not available, falling back to download:', e);
+            // Fallback for web version
+            downloadFile(JSON.stringify(szaarcData, null, 2), title + '.szaarc');
+            scriptWriter.markAsSaved();
+            updateStatus('Script downloaded!');
+        }
+    } else {
+        // Web version fallback
+        downloadFile(JSON.stringify(szaarcData, null, 2), title + '.szaarc');
+        scriptWriter.markAsSaved();
+        updateStatus('Script downloaded!');
+    }
+}
+
+function downloadFile(content, filename) {
+    const blob = new Blob([content], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function saveScriptAs() {
+    // If we're in Electron, use IPC to communicate with main process
+    if (typeof require !== 'undefined') {
+        try {
+            const { ipcRenderer } = require('electron');
+            
+            // Get current script data
+            const scriptContent = document.getElementById('scriptEditor').innerHTML;
+            const title = scriptWriter.currentScript.title || 'Untitled Script';
+            
+            const szaarcData = {
+                format: 'szaarc',
+                version: '1.0.0',
+                application: 'ScreenPlayzaarc',
+                title: title,
+                content: scriptContent,
+                created: scriptWriter.currentScript.created.toISOString(),
+                lastModified: new Date().toISOString(),
+                wordCount: document.getElementById('wordCount').textContent || '0',
+                pageCount: document.getElementById('totalPages').textContent || '1'
+            };
+            
+            // Call the main process save dialog
+            ipcRenderer.invoke('save-file-dialog', JSON.stringify(szaarcData, null, 2), title)
+                .then((result) => {
+                    if (result && result.success && result.filePath) {
+                        // Update script title from filename if needed
+                        const filename = result.filePath.split(/[\\/]/).pop().replace('.szaarc', '');
+                        scriptWriter.currentScript.title = filename;
+                        
+                        // Mark as saved with the new file path
+                        scriptWriter.markAsSaved(result.filePath);
+                        updateStatus('Script saved successfully!');
+                        
+                        // Save to localStorage as well
+                        scriptWriter.saveToLocalStorage();
+                    } else if (!result.canceled) {
+                        updateStatus('Error saving script');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving file:', error);
+                    updateStatus('Error saving script: ' + error.message);
+                });
+                
+        } catch (e) {
+            console.error('IPC not available, falling back to modal:', e);
+            // Fallback to modal dialog for web version
+            showSaveModal();
+        }
+    } else {
+        // Web version fallback
+        showSaveModal();
+    }
+}
+
+function showSaveModal() {
     document.getElementById('saveModal').classList.add('show');
+    document.getElementById('scriptTitle').value = scriptWriter.currentScript.title;
     document.getElementById('scriptTitle').focus();
 }
 
@@ -857,19 +1085,13 @@ function confirmSave() {
             pageCount: document.getElementById('totalPages').textContent || '1'
         };
         
-        const blob = new Blob([JSON.stringify(szaarcData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${title}.szaarc`;
-        a.click();
-        URL.revokeObjectURL(url);
+        // Download file (web version)
+        downloadFile(JSON.stringify(szaarcData, null, 2), `${title}.szaarc`);
+        const newFilePath = `${title}.szaarc`;
+        scriptWriter.markAsSaved(newFilePath);
+        updateStatus('Script downloaded!');
         
         closeSaveModal();
-        updateStatus('Script saved as .szaarc file!');
-        
-        // Update window title
-        document.title = `ScreenPlayzaarc - ${title}`;
     }
 }
 
